@@ -25,7 +25,7 @@ I have created a **Stopwatch Web Application** with the following features:
 ## 📸 Screenshots
 ### Stopwatch Interface
 ![Stopwatch Screenshot](screenshot.png)
-
+\
 
 ---<img width="1131" height="617" alt="image" src="https://github.com/user-attachments/assets/206f116c-b4a0-48ef-8477-920289513a1a" />
 
