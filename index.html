@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkillCraft | Stopwatch</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#111827; --panel-2:#1f2937; 
+      --text:#e5e7eb; --muted:#9ca3af; 
+      --accent:#22c55e; --accent-2:#ef4444; --ring:#3b82f6;
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text);
+      display:flex;align-items:center;justify-content:center;height:100vh;padding:20px}
+    .app{width:min(900px,96vw);background:linear-gradient(180deg,var(--panel),var(--panel-2));
+      border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:24px}
+    header{display:flex;justify-content:space-between;margin-bottom:18px}
+    .timer{font-size:clamp(40px,9vw,80px);text-align:center;margin:10px 0}
+    .labels{text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px}
+    .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px}
+    button{border:1px solid #333;color:var(--text);background:#0b1220;
+      padding:12px;border-radius:12px;cursor:pointer}
+    button:hover{border-color:#555}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid #333}
+    .right{text-align:right}.center{text-align:center}
+    .empty{text-align:center;color:var(--muted);margin-top:12px}
+    .fastest{background:#064e3b !important}  /* green */
+    .slowest{background:#7f1d1d !important}  /* red */
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h2>⏱️ Stopwatch</h2>
+      <span>Task 02</span>
+    </header>
+
+    <div class="timer" id="display">00:00:00.00</div>
+    <div class="labels">HH : MM : SS . CS</div>
+
+    <section class="controls">
+      <button id="toggle">Start</button>
+      <button id="lap">Lap</button>
+      <button id="reset">Reset</button>
+      <button id="clear">Clear Laps</button>
+      <button id="sound">🔈 Sound Off</button>
+    </section>
+
+    <section>
+      <table id="lapTable" hidden>
+        <thead><tr><th>#</th><th>Lap Time</th><th class="right">Total Time</th></tr></thead>
+        <tbody id="lapsBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty">No laps yet. Press Lap to record one.</div>
+    </section>
+  </main>
+
+  <script>
+    let startTime=0, elapsed=0, timerId=null, lastLapAt=0, lapCount=0;
+    let tickInterval=null, soundOn=false;
+
+    const display=document.getElementById('display');
+    const toggleBtn=document.getElementById('toggle');
+    const lapBtn=document.getElementById('lap');
+    const resetBtn=document.getElementById('reset');
+    const clearBtn=document.getElementById('clear');
+    const soundBtn=document.getElementById('sound');
+    const lapsBody=document.getElementById('lapsBody');
+    const table=document.getElementById('lapTable');
+    const emptyState=document.getElementById('emptyState');
+
+    function formatTime(ms){
+      const h=Math.floor(ms/3600000);
+      const m=Math.floor((ms%3600000)/60000);
+      const s=Math.floor((ms%60000)/1000);
+      const cs=Math.floor((ms%1000)/10);
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+    }
+    function render(){ display.textContent=formatTime(elapsed); }
+    function updateUI(running){ toggleBtn.textContent=running?"Pause":"Start"; lapBtn.disabled=!running; }
+    function showTable(){ table.hidden=lapsBody.children.length===0; emptyState.style.display=lapsBody.children.length?"none":"block"; }
+
+    function start(){
+      if(timerId) return;
+      startTime=Date.now()-elapsed;
+      timerId=setInterval(()=>{ elapsed=Date.now()-startTime; render(); },10);
+      if(soundOn){
+        tickInterval=setInterval(()=>{ new AudioContext().createOscillator().start(); playBeep(); },1000);
+      }
+      updateUI(true);
+    }
+    function pause(){
+      clearInterval(timerId); timerId=null;
+      clearInterval(tickInterval); tickInterval=null;
+      updateUI(false);
+    }
+    function reset(){ pause(); elapsed=0; lastLapAt=0; render(); }
+    function addLap(){
+      const total=elapsed, lap=total-lastLapAt; lastLapAt=total; lapCount++;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="center">${lapCount}</td><td>${formatTime(lap)}</td><td class="right">${formatTime(total)}</td>`;
+      lapsBody.insertBefore(tr,lapsBody.firstChild);
+      highlightLaps();
+      showTable();
+    }
+    function clearLaps(){ lapsBody.innerHTML=''; lapCount=0; lastLapAt=elapsed; showTable(); }
+
+    function highlightLaps(){
+      [...lapsBody.children].forEach(row=>row.classList.remove('fastest','slowest'));
+      if(lapsBody.children.length<2) return;
+      let times=[...lapsBody.children].map(r=>timeToMs(r.children[1].textContent));
+      let min=Math.min(...times), max=Math.max(...times);
+      [...lapsBody.children].forEach((row,i)=>{
+        if(times[i]===min) row.classList.add('fastest');
+        if(times[i]===max) row.classList.add('slowest');
+      });
+    }
+    function timeToMs(str){
+      let [h,m,s]=str.split(':'); let [sec,cs]=s.split('.');
+      return (+h*3600000)+(+m*60000)+(+sec*1000)+(+cs*10);
+    }
+
+    function playBeep(){
+      const ctx=new AudioContext();
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type="sine"; osc.frequency.value=1000;
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime+0.1);
+    }
+
+    toggleBtn.onclick=()=>{ timerId?pause():start(); }
+    lapBtn.onclick=addLap; resetBtn.onclick=()=>{ reset(); clearLaps(); }
+    clearBtn.onclick=clearLaps;
+    soundBtn.onclick=()=>{
+      soundOn=!soundOn;
+      soundBtn.textContent=soundOn?"🔊 Sound On":"🔈 Sound Off";
+      if(!soundOn && tickInterval){ clearInterval(tickInterval); tickInterval=null; }
+    }
+
+    render(); showTable();
+  </script>
+</body>
+</html>
