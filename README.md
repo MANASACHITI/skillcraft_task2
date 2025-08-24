@@ -26,7 +26,6 @@ I have created a **Stopwatch Web Application** with the following features:
 ### Stopwatch Interface
 ![Stopwatch Screenshot](screenshot.png)
 
-*(Replace `screenshot.png` with the actual screenshot file you upload to GitHub repository)*
 
 ---<img width="1131" height="617" alt="image" src="https://github.com/user-attachments/assets/206f116c-b4a0-48ef-8477-920289513a1a" />
 
