@@ -33,4 +33,4 @@ I have created a **Stopwatch Web Application** with the following features:
 ## 📂 How to Run
 1. Clone this repository:
    ```bash
-   git clone https://github.com/MANASACHITI/skillcraft-task2.git
+   git clone https://github.com/MANASACHITI/skillcraft_task2.git
